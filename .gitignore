@@ -1,0 +1,6 @@
+build
+.vscode
+include/const.h
+*.log
+*.sublime-project
+*.sublime-workspace
