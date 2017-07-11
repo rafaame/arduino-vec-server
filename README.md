@@ -16,15 +16,15 @@ During boot, the server initializes the libraries that are responsible for commu
 
 During each cycle (each call to the Arduino *loop* function) the following happens:
  
- - The data is read from the 32-bit instrument panel cable and stored as a [DataPacket](#structure-of-the-datapacket);
-  - From time to time data is also read from the OBD2 interface (which is significantly slower);
+ 1. The data is read from the 32-bit instrument panel cable and stored as a [DataPacket](#structure-of-the-datapacket);
+     1. From time to time data is also read from the OBD2 interface (which is significantly slower);
  
- - Broadcast the DataPacket instance to all attached network clients;
-  - Send a copy of this data to the arduino-vec-controller using serial communication;
+ 2. Broadcast the DataPacket instance to all attached network clients;
+     1. Send a copy of this data to the arduino-vec-controller using serial communication;
  
- - Check if there is an incoming [network request](#request-and-response-format);
-  - If so and if it is an attach request, register the client as an attached client;
-  - Otherwise forward it to the arduino-vec-controller, wait for its response and send the response back to the client.
+ 3. Check if there is an incoming [network request](#request-and-response-format);
+     1. If so and if it is an attach request, register the client as an attached client;
+     2. Otherwise forward it to the arduino-vec-controller, wait for its response and send the response back to the client.
 
 ## Structure of the DataPacket
 An instance of the DataPacket class represents the state of the car according to last read data. 
