@@ -1,4 +1,3 @@
-common
 include/const.h
 build
 .vscode
