@@ -1,9 +1,9 @@
 #ifndef ELM327CONTROLLER_H
 #define ELM327CONTROLLER_H
 
-#include "common.h"
+#include "const.h"
 
-#define ELM327_DEBUG false
+#define ELM327_DEBUG true
 
 #define ELM327_TIMEOUT_COMMAND 1000
 #define ELM327_TIMEOUT_RESET   2000
@@ -15,6 +15,7 @@
 #define ELM327_COMMAND_ENGINE_RPM      "01 0C 1"
 #define ELM327_COMMAND_ENGINE_LOAD     "01 43 1"
 #define ELM327_COMMAND_COOLANT_TEMP    "01 05 1"
+#define ELM327_COMMAND_FUEL_LEVEL      "01 2F 1"
 #define ELM327_COMMAND_THROTTLE        "01 11 1"
 #define ELM327_COMMAND_MAF_FLOW        "01 10 1"
 #define ELM327_COMMAND_SPEED           "01 0D 1"
@@ -41,6 +42,7 @@ public:
 	uint16_t getEngineRpm() const;
 	float getEngineLoad() const;
 	uint8_t getCoolantTemp() const;
+	uint8_t getFuelLevel() const;
 	float getThrottle() const;
 	float getMafFlow() const;
 	uint8_t getSpeed() const;

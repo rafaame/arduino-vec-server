@@ -1,15 +1,15 @@
-ARDUINO_PATH = /home/rafaame/Applications/arduino-studio
-SKETCHBOOK   = /home/rafaame/Applications/arduino-studio
+ARDUINO_PATH = /Applications/Arduino.app/Contents/Java
+SKETCHBOOK   = /Applications/Arduino.app/Contents/Java
 SKETCH       = src/main.cpp
 TARGET_DIR   = $(CURDIR)/build
-MONITOR_PORT = /dev/ttyACM0
+MONITOR_PORT = /dev/cu.usbmodem1411
 
 monitor: flash
 	rm -rf arduino.log
-	gnome-terminal -x bash -c "screen -L ./arduino.log $(MONITOR_PORT) 115200"
+	screen $(MONITOR_PORT) 115200
 
 flash: compile
-	if pgrep screen &> /dev/null ; then killall screen ; fi
+	lsof -t $(MONITOR_PORT) | xargs --no-run-if-empty kill -9
 
 	$(ARDUINO_PATH)/hardware/tools/avr/bin/avrdude \
 	-C$(ARDUINO_PATH)/hardware/tools/avr/etc/avrdude.conf \

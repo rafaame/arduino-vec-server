@@ -1,10 +1,11 @@
 #include "DataHandler.h"
+#include "StateController.h"
 #include "ELM327Controller.h"
 #include "SignalController.h"
 #include "Packet.h"
-#include "Spline.h"
 
-DataHandler::DataHandler(const ELM327Controller *elm327Controller, const SignalController *signalController) {
+DataHandler::DataHandler(const StateController *stateController, const ELM327Controller *elm327Controller, const SignalController *signalController) {
+	this->stateController = stateController;
 	this->elm327Controller = elm327Controller;
 	this->signalController = signalController;
 }
@@ -20,20 +21,24 @@ const DataPacket *DataHandler::readPacket() {
 
 	uint64_t currentTime = millis();
 	DataPacket *packet = new DataPacket();
+	static DataPacket *lastPacket = packet;
 
 	packet->engineRpm = signalController->getEngineRpm();
-	//packet->engineRpm = 1000;
 	packet->speed = signalController->getSpeed();
-	//packet->speed = packet->engineRpm;
-	packet->coolantTemp = 0;
-	//packet->coolantTemp = signalController->getCoolantTemp();
 	
-	packet->fuelLevel = 0;
-	/*static uint64_t fuelLevelLastUpdated = millis();
+	packet->coolantTemp = lastPacket->coolantTemp;
+	static uint64_t coolantTempLastUpdated = millis();
+	if ((currentTime - coolantTempLastUpdated) > COOLANT_TEMP_UPDATE_PERIOD) {
+		packet->coolantTemp = elm327Controller->getCoolantTemp();
+		coolantTempLastUpdated = currentTime;
+	}
+
+	packet->fuelLevel = lastPacket->fuelLevel;
+	static uint64_t fuelLevelLastUpdated = millis();
 	if ((currentTime - fuelLevelLastUpdated) > FUEL_LEVEL_UPDATE_PERIOD) {
 		packet->fuelLevel = elm327Controller->getFuelLevel();
 		fuelLevelLastUpdated = currentTime;
-	}*/
+	}
 	
 	packet->isDriverPresent = signalController->isKeyOnFirstPos();
 	packet->isTurnLeftOn = signalController->isTurnLeftOn();
@@ -44,6 +49,19 @@ const DataPacket *DataHandler::readPacket() {
 	packet->isParkingBrakeOn = signalController->isParkingBrakeOn();
 	packet->isKeyOnFirstPos = signalController->isKeyOnFirstPos();
 	packet->isKeyAfterFirstPos = signalController->isKeyAfterFirstPos();
+	packet->isCranking = signalController->isCranking();
+	packet->hasDiagnosisSignal = signalController->hasDiagnosisSignal();
+	packet->hasUcSignal = signalController->hasUcSignal();
+	packet->isAlternatorOn = signalController->isAlternatorOn();
+	packet->isImobilizerOn = signalController->isImobilizerOn();
+	packet->isAirConditioningOn = signalController->isAirConditioningOn();
+	packet->isDefrostOn = signalController->isDefrostOn();
+	packet->isAirRecirculationOn = signalController->isAirRecirculationOn();
+
+	State state = stateController->getState();
+	packet->ventilatorPosition = state.ventilatorPosition;
+	packet->ventilatorSpeed = state.ventilatorSpeed;
+	packet->areHazardLightsOn = state.areHazardLightsOn;
 
 	if (DATA_DEBUG) {
 		Serial.println("Read info:");
@@ -87,9 +105,38 @@ const DataPacket *DataHandler::readPacket() {
 		Serial.print("    isKeyAfterFirstPos: ");
 		Serial.println((int) packet->isKeyAfterFirstPos);
 
+		Serial.print("    isCranking: ");
+		Serial.println((int) packet->isCranking);
+
+		Serial.print("    hasDiagnosisSignal: ");
+		Serial.println((int) packet->hasDiagnosisSignal);
+
+		Serial.print("    hasUcSignal: ");
+		Serial.println((int) packet->hasUcSignal);
+
+		Serial.print("    isAlternatorOn: ");
+		Serial.println((int) packet->isAlternatorOn);
+
+		Serial.print("    isImobilizerOn: ");
+		Serial.println((int) packet->isImobilizerOn);
+
+		Serial.print("    isAirConditioningOn: ");
+		Serial.println((int) packet->isAirConditioningOn);
+
+		Serial.print("    isDefrostOn: ");
+		Serial.println((int) packet->isDefrostOn);
+
+		Serial.print("    isAirRecirculationOn: ");
+		Serial.println((int) packet->isAirRecirculationOn);
 
 		Serial.println("");
 	}
+
+	if (lastPacket != packet) {
+		delete lastPacket;
+	}
+
+	lastPacket = packet;
 
 	return packet;
 }
@@ -136,4 +183,131 @@ void DataHandler::printCalibrationConstants() {
 	Serial.print("; ");
 	Serial.print((long int) signalPulseWidth);
 	Serial.println(")");
+}
+
+const DataPacket *DataHandler::generateTestPacket() {
+	if (DATA_DEBUG) {
+		Serial.println("Reading data info...");
+	}
+
+	uint64_t currentTime = millis();
+	DataPacket *packet = new DataPacket();
+	static DataPacket *lastPacket = packet;
+
+	packet->engineRpm = rand() % 5000;
+	packet->speed = rand() % 180;
+	
+	packet->coolantTemp = lastPacket->coolantTemp;
+	static uint64_t coolantTempLastUpdated = millis();
+	if ((currentTime - coolantTempLastUpdated) > COOLANT_TEMP_UPDATE_PERIOD) {
+		packet->coolantTemp = rand() % 100;
+		coolantTempLastUpdated = currentTime;
+	}
+
+	packet->fuelLevel = lastPacket->fuelLevel;
+	static uint64_t fuelLevelLastUpdated = millis();
+	if ((currentTime - fuelLevelLastUpdated) > FUEL_LEVEL_UPDATE_PERIOD) {
+		packet->fuelLevel = rand() % 100;
+		fuelLevelLastUpdated = currentTime;
+	}
+	
+	packet->isDriverPresent = true;
+	packet->isTurnLeftOn = (bool) (rand() % 2);
+	packet->isTurnRightOn = (bool) (rand() % 2);
+	packet->isHeadlampOn = (bool) (rand() % 2);
+	packet->hasOpenDoor = (bool) (rand() % 2);
+	packet->hasOilPressure = (bool) (rand() % 2);
+	packet->isParkingBrakeOn = (bool) (rand() % 2);
+	packet->isKeyOnFirstPos = true;
+	packet->isKeyAfterFirstPos = true;
+	packet->isCranking = (bool) (rand() % 2);
+	packet->hasDiagnosisSignal = (bool) (rand() % 2);
+	packet->hasUcSignal = (bool) (rand() % 2);
+	packet->isAlternatorOn = (bool) (rand() % 2);
+	packet->isImobilizerOn = (bool) (rand() % 2);
+	packet->isAirConditioningOn = (bool) (rand() % 2);
+	packet->isDefrostOn = (bool) (rand() % 2);
+	packet->isAirRecirculationOn = (bool) (rand() % 2);
+
+	State state = stateController->getState();
+	packet->ventilatorPosition = state.ventilatorPosition;
+	packet->ventilatorSpeed = state.ventilatorSpeed;
+	packet->areHazardLightsOn = state.areHazardLightsOn;
+
+	if (DATA_DEBUG) {
+		Serial.println("Read info:");
+		
+		Serial.print("    engineRpm: ");
+		Serial.println((int) packet->engineRpm);
+
+		Serial.print("    speed: ");
+		Serial.println((int) packet->speed);
+
+		Serial.print("    coolantTemp: ");
+		Serial.println((int) packet->coolantTemp);
+
+		Serial.print("    fuelLevel: ");
+		Serial.println((int) packet->fuelLevel);
+
+		Serial.print("    isDriverPresent: ");
+		Serial.println((int) packet->isDriverPresent);
+
+		Serial.print("    isTurnLeftOn: ");
+		Serial.println((int) packet->isTurnLeftOn);
+
+		Serial.print("    isTurnRightOn: ");
+		Serial.println((int) packet->isTurnRightOn);
+
+		Serial.print("    isHeadlampOn: ");
+		Serial.println((int) packet->isHeadlampOn);
+
+		Serial.print("    hasOpenDoor: ");
+		Serial.println((int) packet->hasOpenDoor);
+
+		Serial.print("    hasOilPressure: ");
+		Serial.println((int) packet->hasOilPressure);
+
+		Serial.print("    isParkingBrakeOn: ");
+		Serial.println((int) packet->isParkingBrakeOn);
+
+		Serial.print("    isKeyOnFirstPos: ");
+		Serial.println((int) packet->isKeyOnFirstPos);
+
+		Serial.print("    isKeyAfterFirstPos: ");
+		Serial.println((int) packet->isKeyAfterFirstPos);
+
+		Serial.print("    isCranking: ");
+		Serial.println((int) packet->isCranking);
+
+		Serial.print("    hasDiagnosisSignal: ");
+		Serial.println((int) packet->hasDiagnosisSignal);
+
+		Serial.print("    hasUcSignal: ");
+		Serial.println((int) packet->hasUcSignal);
+
+		Serial.print("    isAlternatorOn: ");
+		Serial.println((int) packet->isAlternatorOn);
+
+		Serial.print("    isImobilizerOn: ");
+		Serial.println((int) packet->isImobilizerOn);
+
+		Serial.print("    isAirConditioningOn: ");
+		Serial.println((int) packet->isAirConditioningOn);
+
+		Serial.print("    isDefrostOn: ");
+		Serial.println((int) packet->isDefrostOn);
+
+		Serial.print("    isAirRecirculationOn: ");
+		Serial.println((int) packet->isAirRecirculationOn);
+
+		Serial.println("");
+	}
+
+	if (lastPacket != packet) {
+		delete lastPacket;
+	}
+
+	lastPacket = packet;
+
+	return packet;
 }

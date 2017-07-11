@@ -86,6 +86,13 @@ uint8_t ELM327Controller::getCoolantTemp() const {
 	return result[2] - 40;
 }
 
+uint8_t ELM327Controller::getFuelLevel() const {
+	sendCommand(ELM327_COMMAND_FUEL_LEVEL);
+	vector<uint8_t> result = responseBytes(ELM327_TIMEOUT_COMMAND, "000000");
+
+	return 100.0f * result[2] / 255.0f;
+}
+
 float ELM327Controller::getThrottle() const {
 	sendCommand(ELM327_COMMAND_THROTTLE);
 	vector<uint8_t> result = responseBytes(ELM327_TIMEOUT_COMMAND, "000000");
